@@ -1,0 +1,34 @@
+String objectName='Lead'; //Object name to generate field details
+              String query = 'SELECT QualifiedApiName, DataType, Label FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = :objectName';
+              List<Schema.SObjectField> fields = Schema.getGlobalDescribe().get(objectName).getDescribe().fields.getMap().values();
+              List<List<String>> excelData = new List<List<String>>();
+              excelData.add(new List<String>{'Field Name', 'Data Type', 'API Name', 'Editable', 'Updateable','Length','Default Value'});
+              for (Schema.SObjectField field : fields) {
+                Schema.DescribeFieldResult fieldDescribe = field.getDescribe();
+                if(!fieldDescribe.isAutoNumber() && !fieldDescribe.isCalculated()){
+                  excelData.add(new List<String>{
+                    fieldDescribe.getLabel(),
+                    String.valueOf(fieldDescribe.getType()),
+                    fieldDescribe.getName(),
+                    String.valueOf(fieldDescribe.isUpdateable()),
+                    String.valueOf(fieldDescribe.isCreateable()),
+                    String.valueOf(fieldDescribe.getLength()),
+                    String.valueOf(fieldDescribe.getDefaultValue())
+                  });
+                }
+            }
+              // Generate Excel content
+               String csvData = '';
+                for (List<String> row : excelData) {
+                    csvData += String.join(row, ',') + '\n';
+                }
+                Blob excelBlob = Blob.valueOf(csvData);
+              // Send an email with the Excel file as an attachment
+              Messaging.SingleEmailMessage email = new Messaging.SingleEmailMessage();
+              email.setSubject('Object Fields Excel File');
+              email.setPlainTextBody('Please find the attached Excel file.');
+              Messaging.EmailFileAttachment attachment = new Messaging.EmailFileAttachment();
+              attachment.setFileName(objectName+'Fields.csv');
+              attachment.setBody(excelBlob);email.setFileAttachments(new List<Messaging.EmailFileAttachment>{attachment});
+              email.setToAddresses(new List<String>{'sriram@cccinfotech.com'});
+              Messaging.sendEmail(new List<Messaging.SingleEmailMessage>{email});
