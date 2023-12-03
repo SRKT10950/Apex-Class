@@ -1,19 +1,25 @@
-String objectName='Lead'; //Object name to generate field details
+String objectName='Lead_Product__c'; //Object name to generate field details
               String query = 'SELECT QualifiedApiName, DataType, Label FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = :objectName';
               List<Schema.SObjectField> fields = Schema.getGlobalDescribe().get(objectName).getDescribe().fields.getMap().values();
               List<List<String>> excelData = new List<List<String>>();
-              excelData.add(new List<String>{'Field Name', 'Data Type', 'API Name', 'Editable', 'Updateable','Length','Default Value'});
+              excelData.add(new List<String>{'Field Name', 'Data Type', 'API Name','Required', 'Editable', 'Updateable','Length','Default Value','PickList'});
               for (Schema.SObjectField field : fields) {
                 Schema.DescribeFieldResult fieldDescribe = field.getDescribe();
                 if(!fieldDescribe.isAutoNumber() && !fieldDescribe.isCalculated()){
+                  String picklist = '';
+                  for(Schema.PicklistEntry ple :fieldDescribe.getPicklistValues()){
+                    picklist +=ple.getValue()+';';
+                    }
                   excelData.add(new List<String>{
                     fieldDescribe.getLabel(),
                     String.valueOf(fieldDescribe.getType()),
                     fieldDescribe.getName(),
-                    String.valueOf(fieldDescribe.isUpdateable()),
+                    String.valueOf(!fieldDescribe.isNillable()),
                     String.valueOf(fieldDescribe.isCreateable()),
+                    String.valueOf(fieldDescribe.isUpdateable()),
                     String.valueOf(fieldDescribe.getLength()),
-                    String.valueOf(fieldDescribe.getDefaultValue())
+                    String.valueOf(fieldDescribe.getDefaultValue()),
+                    String.valueOf(picklist)
                   });
                 }
             }
