@@ -1,0 +1,35 @@
+List<List<String>> excelData = new List<List<String>>();
+excelData.add(new List<String>{'Object','Read','Create','Edit','Delete','View All','Modify All'});
+List<Profile> profiles = [SELECT Id, Name FROM Profile LIMIT 2];
+for (Profile profile : profiles) {
+    // Query to retrieve object permissions for the specified profile
+            List<ObjectPermissions> objectPermissions = [SELECT SObjectType, PermissionsRead, PermissionsCreate, PermissionsEdit, PermissionsDelete
+                                                         FROM ObjectPermissions
+                                                         WHERE Parent.Profile.Name = :profile.Name];
+
+   // Iterate through object permissions
+            for (ObjectPermissions objectPermission : objectPermissions) {
+               excelData.add(new List<String>{objectPermission.SObjectType ,
+                    String.valueOf(objectPermission.PermissionsRead),
+                    String.valueOf(objectPermission.PermissionsCreate ),
+                    String.valueOf(objectPermission.PermissionsEdit ),
+                    String.valueOf(objectPermission.PermissionsDelete ),
+                    String.valueOf(objectPermission.PermissionsViewAllRecords ),
+                    String.valueOf(objectPermission.PermissionsModifyAllRecords )});
+                    }
+            }
+              // Generate Excel content
+               String csvData = '';
+                for (List<String> row : excelData) {
+                    csvData += String.join(row, ',') + '\n';
+                }
+                Blob excelBlob = Blob.valueOf(csvData);
+              // Send an email with the Excel file as an attachment
+              Messaging.SingleEmailMessage email = new Messaging.SingleEmailMessage();
+              email.setSubject('Object Fields Excel File');
+              email.setPlainTextBody('Please find the attached Excel file.');
+              Messaging.EmailFileAttachment attachment = new Messaging.EmailFileAttachment();
+              attachment.setFileName('Prifile Object Permission.csv');
+              attachment.setBody(excelBlob);email.setFileAttachments(new List<Messaging.EmailFileAttachment>{attachment});
+              email.setToAddresses(new List<String>{'sriram@cccinfotech.com'});
+              Messaging.sendEmail(new List<Messaging.SingleEmailMessage>{email});
