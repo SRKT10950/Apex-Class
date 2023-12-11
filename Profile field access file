@@ -1,0 +1,33 @@
+String objectName='QuoteLineItem'; //Object name to generate field details
+List<List<String>> excelData = new List<List<String>>();
+excelData.add(new List<String>{'Profile Name', 'Field API Name', 'Read Access', 'Write Access'});
+List<Profile> profiles = [SELECT Id, Name FROM Profile];
+for (Profile profile : profiles) {
+                // Get the field permissions for the object and profile
+                List<FieldPermissions> fieldPermissions = [SELECT SObjectType, PermissionsRead,field, PermissionsEdit
+                                                           FROM FieldPermissions
+                                                           WHERE Parent.ProfileId = :profile.Id
+                                                           AND SObjectType = :objectName];
+
+                // Iterate through each field permission and write to the CSV file
+                for (FieldPermissions fieldPermission : fieldPermissions) {
+                    excelData.add(new List<String>{profile.Name, fieldPermission.Field,
+                            String.valueOf(fieldPermission.PermissionsRead), String.valueOf(fieldPermission.PermissionsEdit)
+                      });
+                    }
+            }
+              // Generate Excel content
+               String csvData = '';
+                for (List<String> row : excelData) {
+                    csvData += String.join(row, ',') + '\n';
+                }
+                Blob excelBlob = Blob.valueOf(csvData);
+              // Send an email with the Excel file as an attachment
+              Messaging.SingleEmailMessage email = new Messaging.SingleEmailMessage();
+              email.setSubject('Object Fields Excel File');
+              email.setPlainTextBody('Please find the attached Excel file.');
+              Messaging.EmailFileAttachment attachment = new Messaging.EmailFileAttachment();
+              attachment.setFileName(objectName+'Fields.csv');
+              attachment.setBody(excelBlob);email.setFileAttachments(new List<Messaging.EmailFileAttachment>{attachment});
+              email.setToAddresses(new List<String>{'sriram@cccinfotech.com'});
+              Messaging.sendEmail(new List<Messaging.SingleEmailMessage>{email});
